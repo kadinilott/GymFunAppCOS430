@@ -8,12 +8,9 @@ CORS(app)
 def home():
     return {"message": "Gym API running"}
 
-@app.route("/gyms", methods=["GET"])
-def get_gyms():
-    return jsonify([
-        {"id": 1, "name": "Iron Forge Gym", "city": "Boston"},
-        {"id": 2, "name": "Peak Performance", "city": "New York"}
-    ])
+@app.route("/test")
+def test():
+    return jsonify({"status": "ok"})
 
 if __name__ == "__main__":
     app.run(debug=True)
