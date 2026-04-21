@@ -1,27 +1,45 @@
-import { useEffect, useState } from "react";
-import "./styles.css";
+import { Routes, Route } from "react-router-dom";
+import { useState } from "react";
+import LoginPage from "./pages/LoginPage";
+import HomePage from "./pages/HomePage";
+import ProfilePage from "./pages/ProfilePage";
+import EditProfilePage from "./pages/EditProfilePage";
+import FriendsPage from "./pages/FriendsPage";
+import GymPage from "./pages/GymPage";
+import WorkoutPage from "./pages/WorkoutPage";
+import DesignWorkoutPage from "./pages/DesignWorkoutPage";
+import MyWorkoutsPage from "./pages/MyWorkoutsPage";
+import AITrainerPage from "./pages/AITrainerPage";
 
 function App() {
-  const [gyms, setGyms] = useState([]);
-
-  useEffect(() => {
-    fetch("http://127.0.0.1:5000/gyms")
-      .then((res) => res.json())
-      .then((data) => setGyms(data));
-  }, []);
+  const [profile, setProfile] = useState({
+    profilePicture: "",
+    name: "",
+    age: "",
+    gender: "",
+    height: "",
+    weight: "",
+  });
 
   return (
-    <div className="container">
-      <h1>Gym App</h1>
-      <h2>Available Gyms</h2>
-
-      {gyms.map((gym) => (
-        <div key={gym.id} className="card">
-          <h3>{gym.name}</h3>
-          <p>{gym.city}</p>
-        </div>
-      ))}
-    </div>
+    <Routes>
+      <Route path="/" element={<LoginPage />} />
+      <Route path="/home" element={<HomePage />} />
+      <Route path="/profile" element={<ProfilePage profile={profile} />} />
+      <Route path="/profile/:id" element={<ProfilePage profile={profile} />} />
+      <Route
+        path="/edit-profile"
+        element={
+          <EditProfilePage profile={profile} setProfile={setProfile} />
+        }
+      />
+      <Route path="/friends" element={<FriendsPage />} />
+      <Route path="/gym" element={<GymPage />} />
+      <Route path="/workout" element={<WorkoutPage />} />
+      <Route path="/design-workout" element={<DesignWorkoutPage />} />
+      <Route path="/my-workouts" element={<MyWorkoutsPage />} />
+      <Route path="/ai" element={<AITrainerPage />} />
+    </Routes>
   );
 }
 
