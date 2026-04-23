@@ -3,9 +3,18 @@ import { useNavigate } from "react-router-dom";
 function HomePage() {
   const navigate = useNavigate();
 
+  const handleLogout = () => {
+    localStorage.removeItem("user");
+    navigate("/");
+  };
+
   return (
     <div className="home-page">
       <h1 className="home-title">GymFun</h1>
+
+      <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
+        <button onClick={handleLogout}>Logout</button>
+      </div>
 
       <div className="home-grid">
         <div className="home-card" onClick={() => navigate("/profile")}>

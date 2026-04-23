@@ -1,41 +1,43 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-function LoginPage() {
+function SignupPage() {
   const navigate = useNavigate();
 
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleLogin = async (e) => {
+  const handleSignup = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!email.trim() || !password.trim()) {
-      setError("Please enter your email and password.");
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError("Please fill in all fields.");
       return;
     }
 
     try {
       setLoading(true);
 
-      const response = await fetch("http://localhost:5000/api/auth/login", {
+      const response = await fetch("http://localhost:5000/api/auth/register", {
         method: "POST",
         headers: {
-          "Content-Type": "application/json",
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email,
-          password,
-        }),
+          name: name.trim(),
+          email: email.trim(),
+          password
+        })
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Login failed.");
+        setError(data.message || "Signup failed.");
         return;
       }
 
@@ -52,10 +54,17 @@ function LoginPage() {
     <div className="login-page">
       <div className="login-header">
         <h1>GymFun</h1>
-        <p>Making working out social and motivating</p>
+        <p>Create your account</p>
       </div>
 
-      <form className="login-card" onSubmit={handleLogin}>
+      <form className="login-card" onSubmit={handleSignup}>
+        <input
+          type="text"
+          placeholder="Name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+        />
+
         <input
           type="email"
           placeholder="Email"
@@ -73,18 +82,15 @@ function LoginPage() {
         {error && <p className="login-error">{error}</p>}
 
         <button type="submit" disabled={loading}>
-          {loading ? "Logging in..." : "Log in"}
+          {loading ? "Creating account..." : "Sign up"}
         </button>
 
-        <p className="forgot-password">Forgot password?</p>
+        <p className="forgot-password" onClick={() => navigate("/")}>
+          Already have an account? Log in
+        </p>
       </form>
-
-      <div className="signup-text">
-        <p>Don&apos;t have an account?</p>
-        <span onClick={() => navigate("/signup")}>Sign up</span>
-      </div>
     </div>
   );
 }
 
-export default LoginPage;
+export default SignupPage;
