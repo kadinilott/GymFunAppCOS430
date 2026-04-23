@@ -1,6 +1,7 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import { useState } from "react";
 import LoginPage from "./pages/LoginPage";
+import SignupPage from "./pages/SignupPage";
 import HomePage from "./pages/HomePage";
 import ProfilePage from "./pages/ProfilePage";
 import EditProfilePage from "./pages/EditProfilePage";
@@ -10,6 +11,11 @@ import WorkoutPage from "./pages/WorkoutPage";
 import DesignWorkoutPage from "./pages/DesignWorkoutPage";
 import MyWorkoutsPage from "./pages/MyWorkoutsPage";
 import AITrainerPage from "./pages/AITrainerPage";
+
+function ProtectedRoute({ children }) {
+  const user = localStorage.getItem("user");
+  return user ? children : <Navigate to="/" replace />;
+}
 
 function App() {
   const [profile, setProfile] = useState({
@@ -24,21 +30,97 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<LoginPage />} />
-      <Route path="/home" element={<HomePage />} />
-      <Route path="/profile" element={<ProfilePage profile={profile} />} />
-      <Route path="/profile/:id" element={<ProfilePage profile={profile} />} />
+      <Route path="/signup" element={<SignupPage />} />
+
+      <Route
+        path="/home"
+        element={
+          <ProtectedRoute>
+            <HomePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/profile/:id"
+        element={
+          <ProtectedRoute>
+            <ProfilePage />
+          </ProtectedRoute>
+        }
+      />
+
       <Route
         path="/edit-profile"
         element={
-          <EditProfilePage profile={profile} setProfile={setProfile} />
+          <ProtectedRoute>
+            <EditProfilePage profile={profile} setProfile={setProfile} />
+          </ProtectedRoute>
         }
       />
-      <Route path="/friends" element={<FriendsPage />} />
-      <Route path="/gym" element={<GymPage />} />
-      <Route path="/workout" element={<WorkoutPage />} />
-      <Route path="/design-workout" element={<DesignWorkoutPage />} />
-      <Route path="/my-workouts" element={<MyWorkoutsPage />} />
-      <Route path="/ai" element={<AITrainerPage />} />
+
+      <Route
+        path="/friends"
+        element={
+          <ProtectedRoute>
+            <FriendsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/gym"
+        element={
+          <ProtectedRoute>
+            <GymPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/workout"
+        element={
+          <ProtectedRoute>
+            <WorkoutPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/design-workout"
+        element={
+          <ProtectedRoute>
+            <DesignWorkoutPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/my-workouts"
+        element={
+          <ProtectedRoute>
+            <MyWorkoutsPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
+        path="/ai"
+        element={
+          <ProtectedRoute>
+            <AITrainerPage />
+          </ProtectedRoute>
+        }
+      />
     </Routes>
   );
 }
