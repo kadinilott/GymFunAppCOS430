@@ -108,6 +108,20 @@ CREATE TABLE gym_exercises (
     CONSTRAINT uq_gym_exercises_gym_exercise UNIQUE (gym_id, exercise_id)
 );
 
+CREATE TABLE workout_sets (
+    workout_set_id INT AUTO_INCREMENT PRIMARY KEY,
+    workout_exercise_id INT NOT NULL,
+    set_number INT NOT NULL,
+    reps INT NULL,
+    weight DECIMAL(6,2) NULL,
+    duration_seconds INT NULL,
+    CONSTRAINT fk_workout_sets_workout_exercise
+        FOREIGN KEY (workout_exercise_id) REFERENCES workout_exercises(workout_exercise_id)
+        ON DELETE CASCADE,
+    CONSTRAINT uq_workout_sets_exercise_set UNIQUE (workout_exercise_id, set_number)
+);
+
+
 CREATE TABLE post_likes (
     post_like_id INT AUTO_INCREMENT PRIMARY KEY,
     post_id INT NOT NULL,
@@ -163,3 +177,5 @@ CREATE INDEX idx_post_likes_user_id ON post_likes(user_id);
 CREATE INDEX idx_post_comments_post_id ON post_comments(post_id);
 CREATE INDEX idx_post_comments_user_id ON post_comments(user_id);
 CREATE INDEX idx_follows_followed_user_id ON follows(followed_user_id);
+CREATE INDEX idx_workout_sets_workout_exercise_id ON workout_sets(workout_exercise_id);
+

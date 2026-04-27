@@ -1,91 +1,152 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-
-const followers = [
-  { id: 2, name: "Maya Chen", username: "@mayalifts" },
-  { id: 3, name: "Jordan Lee", username: "@jordangains" },
-  { id: 4, name: "Chris Walker", username: "@chrismoves" },
-];
-
-const following = [
-  { id: 5, name: "Ava Patel", username: "@avatrains" },
-  { id: 6, name: "Noah Brooks", username: "@noahstrength" },
-  { id: 7, name: "Lena Scott", username: "@lenafit" },
-  { id: 8, name: "Maya Chen", username: "@mayalifts" },
-];
-
-const initialFeedPosts = [
-  {
-    id: 1,
-    userId: 5,
-    userName: "Ava Patel",
-    username: "@avatrains",
-    workoutTitle: "Leg Day",
-    workoutSummary: "Back Squat, Romanian Deadlift, Leg Press",
-    gymName: "Iron Forge Fitness",
-    timeAgo: "1h ago",
-    likes: 12,
-    liked: false,
-    comments: [
-      { id: 1, user: "Maya Chen", text: "Huge session 🔥" },
-      { id: 2, user: "Jordan Lee", text: "Leg press numbers are crazy" },
-    ],
-  },
-  {
-    id: 2,
-    userId: 6,
-    userName: "Noah Brooks",
-    username: "@noahstrength",
-    workoutTitle: "Push Day",
-    workoutSummary: "Bench Press, Incline DB Press, Tricep Pushdown",
-    gymName: "Northside Barbell Club",
-    timeAgo: "3h ago",
-    likes: 8,
-    liked: true,
-    comments: [{ id: 1, user: "Ava Patel", text: "Strong bench day" }],
-  },
-  {
-    id: 3,
-    userId: 7,
-    userName: "Lena Scott",
-    username: "@lenafit",
-    workoutTitle: "Pull Day",
-    workoutSummary: "Lat Pulldown, Seated Row, Hammer Curl",
-    gymName: "Flex Factory",
-    timeAgo: "Yesterday",
-    likes: 15,
-    liked: false,
-    comments: [],
-  },
-];
 
 function FriendsPage() {
   const navigate = useNavigate();
 
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
   const [activeList, setActiveList] = useState("");
-  const [feedPosts, setFeedPosts] = useState(initialFeedPosts);
+  const [displayedUsers, setDisplayedUsers] = useState([]);
+  const [feedPosts, setFeedPosts] = useState([]);
   const [openComments, setOpenComments] = useState({});
   const [commentInputs, setCommentInputs] = useState({});
+  const [error, setError] = useState("");
 
-  const displayedUsers = activeList === "followers" ? followers : following;
+  const storedUser = JSON.parse(localStorage.getItem("user"));
 
-  const openUserProfile = (userId) => {
-    navigate(`/profile/${userId}`);
+  useEffect(() => {
+    if (!storedUser) {
+      navigate("/");
+      return;
+    }
+
+    fetchSocialCounts();
+    fetchPosts();
+  }, []);
+
+  const fetchSocialCounts = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/users/${storedUser.user_id}/social-counts`,
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Could not load social counts.");
+        return;
+      }
+
+      setFollowingCount(data.following_count);
+      setFollowersCount(data.followers_count);
+    } catch (err) {
+      setError("Could not load social counts.");
+    }
   };
 
-  const toggleLike = (postId) => {
-    setFeedPosts((prev) =>
-      prev.map((post) => {
-        if (post.id !== postId) return post;
+  const handleLike = async (postId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/posts/${postId}/like`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: storedUser.user_id,
+          }),
+        },
+      );
 
-        const nextLiked = !post.liked;
+      const data = await response.json();
 
-        return {
-          ...post,
-          liked: nextLiked,
-          likes: nextLiked ? post.likes + 1 : post.likes - 1,
+      if (!response.ok) {
+        setError(data.message || "Could not like post.");
+        return;
+      }
+
+      setFeedPosts((prev) =>
+        prev.map((post) =>
+          post.post_id === postId
+            ? {
+                ...post,
+                like_count: data.like_count,
+                liked_by_me: data.liked,
+              }
+            : post,
+        ),
+      );
+    } catch (err) {
+      setError("Could not like post.");
+    }
+  };
+
+  const fetchUserList = async (type) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/users/${storedUser.user_id}/${type}`,
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Could not load users.");
+        return;
+      }
+
+      setActiveList(type);
+      setDisplayedUsers(data);
+    } catch (err) {
+      setError("Could not load users.");
+    }
+  };
+  const fetchPosts = async () => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/posts?user_id=${storedUser.user_id}`,
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.message || "Could not load posts.");
+        return;
+      }
+
+      setFeedPosts(data);
+    } catch (err) {
+      setError("Could not load posts.");
+    }
+  };
+
+  const formatPostedAt = (dateValue) => {
+    if (!dateValue) return "Unknown time";
+    return new Date(dateValue).toLocaleString();
+  };
+
+  const summarizeSets = (exercise) => {
+    const groups = {};
+
+    exercise.sets.forEach((set) => {
+      const reps = set.reps ?? "-";
+      const weight = set.weight ?? "-";
+      const key = `${reps}-${weight}`;
+
+      if (!groups[key]) {
+        groups[key] = {
+          reps,
+          weight,
+          count: 0,
         };
-      })
+      }
+
+      groups[key].count += 1;
+    });
+
+    return Object.values(groups).map(
+      (group) =>
+        `${exercise.name} ${group.count} sets ${group.reps} reps ${group.weight} lbs`,
     );
   };
 
@@ -103,38 +164,42 @@ function FriendsPage() {
     }));
   };
 
-  const addComment = (postId) => {
-    const newCommentText = (commentInputs[postId] || "").trim();
+  const addComment = async (postId) => {
+    const comment = (commentInputs[postId] || "").trim();
 
-    if (!newCommentText) return;
+    if (!comment) return;
 
-    setFeedPosts((prev) =>
-      prev.map((post) => {
-        if (post.id !== postId) return post;
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/posts/${postId}/comment`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            user_id: storedUser.user_id,
+            content: comment,
+          }),
+        },
+      );
 
-        return {
-          ...post,
-          comments: [
-            ...post.comments,
-            {
-              id: Date.now(),
-              user: "You",
-              text: newCommentText,
-            },
-          ],
-        };
-      })
-    );
+      const data = await response.json();
 
-    setCommentInputs((prev) => ({
-      ...prev,
-      [postId]: "",
-    }));
+      if (!response.ok) {
+        setError(data.message || "Could not add comment.");
+        return;
+      }
 
-    setOpenComments((prev) => ({
-      ...prev,
-      [postId]: true,
-    }));
+      setCommentInputs((prev) => ({
+        ...prev,
+        [postId]: "",
+      }));
+
+      fetchPosts();
+    } catch (err) {
+      setError("Could not add comment.");
+    }
   };
 
   return (
@@ -144,7 +209,7 @@ function FriendsPage() {
           <div>
             <h1 className="friends-title">Friends</h1>
             <p className="friends-subtitle">
-              See activity from the people you follow
+              See workout posts from the community
             </p>
           </div>
 
@@ -156,14 +221,17 @@ function FriendsPage() {
           </button>
         </div>
 
+        {error && <p className="login-error">{error}</p>}
+        {error && <p className="login-error">{error}</p>}
+
         <div className="friends-stats-row">
           <button
             className={`friends-stat-card ${
               activeList === "following" ? "selected" : ""
             }`}
-            onClick={() => setActiveList("following")}
+            onClick={() => fetchUserList("following")}
           >
-            <span className="friends-stat-number">{following.length}</span>
+            <span className="friends-stat-number">{followingCount}</span>
             <span className="friends-stat-label">Following</span>
           </button>
 
@@ -171,9 +239,9 @@ function FriendsPage() {
             className={`friends-stat-card ${
               activeList === "followers" ? "selected" : ""
             }`}
-            onClick={() => setActiveList("followers")}
+            onClick={() => fetchUserList("followers")}
           >
-            <span className="friends-stat-number">{followers.length}</span>
+            <span className="friends-stat-number">{followersCount}</span>
             <span className="friends-stat-label">Followers</span>
           </button>
         </div>
@@ -182,10 +250,7 @@ function FriendsPage() {
           <div className="friends-list-card">
             <div className="friends-list-header">
               <h2>{activeList === "followers" ? "Followers" : "Following"}</h2>
-              <button
-                className="text-button"
-                onClick={() => setActiveList("")}
-              >
+              <button className="text-button" onClick={() => setActiveList("")}>
                 Close
               </button>
             </div>
@@ -193,17 +258,21 @@ function FriendsPage() {
             <div className="friends-user-list">
               {displayedUsers.map((user) => (
                 <button
-                  key={`${activeList}-${user.id}`}
+                  key={user.user_id}
                   className="friends-user-row"
-                  onClick={() => openUserProfile(user.id)}
+                  onClick={() => navigate(`/profile/${user.user_id}`)}
                 >
                   <div className="friends-user-avatar">
-                    {user.name.charAt(0)}
+                    {user.profile_picture_url ? (
+                      <img src={user.profile_picture_url} alt={user.name} />
+                    ) : (
+                      user.name.charAt(0)
+                    )}
                   </div>
 
                   <div className="friends-user-info">
                     <strong>{user.name}</strong>
-                    <span>{user.username}</span>
+                    <span>{user.email}</span>
                   </div>
 
                   <span className="friends-user-link">View Profile</span>
@@ -212,75 +281,88 @@ function FriendsPage() {
             </div>
           </div>
         )}
-
         <div className="friends-feed">
+          {feedPosts.length === 0 && !error && (
+            <div className="empty-state-card">
+              <p>No workout posts yet.</p>
+            </div>
+          )}
+
           {feedPosts.map((post) => (
-            <div key={post.id} className="feed-post-card">
+            <div key={post.post_id} className="feed-post-card">
               <div className="feed-post-header">
                 <button
                   className="feed-user-button"
-                  onClick={() => openUserProfile(post.userId)}
+                  onClick={() => navigate(`/profile/${post.user_id}`)}
                 >
                   <div className="feed-user-avatar">
-                    {post.userName.charAt(0)}
+                    {post.user_name?.charAt(0) || "?"}
                   </div>
 
                   <div className="feed-user-text">
-                    <strong>{post.userName}</strong>
-                    <span>{post.username}</span>
+                    <strong>{post.user_name}</strong>
+                    <span>{formatPostedAt(post.posted_at)}</span>
                   </div>
                 </button>
-
-                <span className="feed-post-time">{post.timeAgo}</span>
               </div>
 
               <div className="feed-post-body">
-                <h2>{post.workoutTitle}</h2>
-                <p>{post.workoutSummary}</p>
-                <span className="feed-post-gym">{post.gymName}</span>
+                <h2>{post.title}</h2>
+
+                {post.caption && <p>{post.caption}</p>}
+
+                <div className="feed-workout-summary">
+                  {post.exercises.flatMap((exercise) =>
+                    summarizeSets(exercise).map((line, index) => (
+                      <p key={`${exercise.workout_exercise_id}-${index}`}>
+                        {line}
+                      </p>
+                    )),
+                  )}
+                </div>
               </div>
 
               <div className="feed-post-actions">
                 <button
-                  className={`feed-action-button ${post.liked ? "liked" : ""}`}
-                  onClick={() => toggleLike(post.id)}
+                  className={`feed-action-button ${post.liked_by_me ? "liked" : ""}`}
+                  onClick={() => handleLike(post.post_id)}
                 >
-                  {post.liked ? "Liked" : "Like"} ({post.likes})
+                  {post.liked_by_me ? "Liked" : "Like"} ({post.like_count || 0})
                 </button>
 
                 <button
                   className="feed-action-button"
-                  onClick={() => toggleComments(post.id)}
+                  onClick={() => toggleComments(post.post_id)}
                 >
-                  Comment ({post.comments.length})
+                  Comment
                 </button>
               </div>
 
-              {openComments[post.id] && (
+              {openComments[post.post_id] && (
                 <div className="feed-comments-section">
-                  <div className="feed-comments-list">
-                    {post.comments.length > 0 ? (
-                      post.comments.map((comment) => (
-                        <div key={comment.id} className="feed-comment">
-                          <strong>{comment.user}</strong>
-                          <span>{comment.text}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="no-comments-text">No comments yet.</p>
-                    )}
-                  </div>
+                  {post.comments.length === 0 ? (
+                    <p className="no-comments-text">No comments yet.</p>
+                  ) : (
+                    post.comments.map((c) => (
+                      <p key={c.comment_id}>
+                        <strong>{c.name}:</strong> {c.content}
+                      </p>
+                    ))
+                  )}
 
                   <div className="feed-comment-input-row">
                     <input
                       type="text"
                       placeholder="Add a comment"
-                      value={commentInputs[post.id] || ""}
+                      value={commentInputs[post.post_id] || ""}
                       onChange={(e) =>
-                        handleCommentInputChange(post.id, e.target.value)
+                        handleCommentInputChange(post.post_id, e.target.value)
                       }
                     />
-                    <button onClick={() => addComment(post.id)}>Post</button>
+
+                    <button onClick={() => addComment(post.post_id)}>
+                      Post
+                    </button>
                   </div>
                 </div>
               )}
