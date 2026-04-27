@@ -220,3 +220,71 @@ def get_followers(user_id):
             cursor.close()
         if conn:
             conn.close()
+
+@users_bp.route("/search", methods=["GET"])
+def search_users():
+    search = request.args.get("search", "")
+    current_user_id = request.args.get("user_id")
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT user_id, name, email, profile_picture_url
+            FROM users
+            WHERE name LIKE %s
+              AND user_id <> %s
+            ORDER BY name
+            LIMIT 20
+            """,
+            (f"%{search}%", current_user_id)
+        )
+
+        return jsonify(cursor.fetchall()), 200
+
+    except mysql.connector.Error as e:
+        return jsonify({"message": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
+
+@users_bp.route("/<int:user_id>/follow/<int:target_user_id>", methods=["POST"])
+def follow_user(user_id, target_user_id):
+    if user_id == target_user_id:
+        return jsonify({"message": "You cannot follow yourself"}), 400
+
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            INSERT IGNORE INTO follows (follower_user_id, followed_user_id)
+            VALUES (%s, %s)
+            """,
+            (user_id, target_user_id)
+        )
+
+        conn.commit()
+
+        return jsonify({"message": "User followed"}), 200
+
+    except mysql.connector.Error as e:
+        return jsonify({"message": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
