@@ -11,7 +11,8 @@ import WorkoutPage from "./pages/WorkoutPage";
 import DesignWorkoutPage from "./pages/DesignWorkoutPage";
 import MyWorkoutsPage from "./pages/MyWorkoutsPage";
 import AITrainerPage from "./pages/AITrainerPage";
-
+import GymDetailPage from "./pages/GymDetailPage";
+import WorkoutDetailPage from "./pages/WorkoutDetailPage";
 function ProtectedRoute({ children }) {
   const user = localStorage.getItem("user");
   return user ? children : <Navigate to="/" replace />;
@@ -87,12 +88,29 @@ function App() {
       />
 
       <Route
+        path="/gym/:gymId"
+        element={
+          <ProtectedRoute>
+            <GymDetailPage />
+          </ProtectedRoute>
+        }
+      />
+
+      <Route
         path="/workout"
         element={
           <ProtectedRoute>
             <WorkoutPage />
           </ProtectedRoute>
         }
+      />
+      <Route 
+        path="/workouts/:workoutId" 
+        element={
+        <ProtectedRoute>
+          <WorkoutDetailPage />
+        </ProtectedRoute>
+        } 
       />
 
       <Route
