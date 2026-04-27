@@ -4,12 +4,14 @@ import { useNavigate, useParams } from "react-router-dom";
 function GymDetailPage() {
   const { gymId } = useParams();
   const navigate = useNavigate();
-
+  const [members, setMembers] = useState([]);
+  const [membersError, setMembersError] = useState("");
   const [gym, setGym] = useState(null);
   const [error, setError] = useState("");
   const [leaderboards, setLeaderboards] = useState(null);
   const [leaderboardError, setLeaderboardError] = useState("");
-
+  const storedUser = JSON.parse(localStorage.getItem("user"));
+  const [followedMemberIds, setFollowedMemberIds] = useState([]);
   useEffect(() => {
     const fetchGym = async () => {
       try {
@@ -28,6 +30,26 @@ function GymDetailPage() {
     };
 
     fetchGym();
+    const fetchMembers = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:5000/api/gyms/${gymId}/members`,
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          setMembersError(data.message || "Could not load members.");
+          return;
+        }
+
+        setMembers(data);
+      } catch (err) {
+        setMembersError("Could not load members.");
+      }
+    };
+
+    fetchMembers();
 
     const fetchLeaderboards = async () => {
       try {
@@ -51,6 +73,27 @@ function GymDetailPage() {
     fetchLeaderboards();
   }, [gymId]);
 
+  const followMember = async (targetUserId) => {
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/users/${storedUser.user_id}/follow/${targetUserId}`,
+        {
+          method: "POST",
+        },
+      );
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMembersError(data.message || "Could not follow user.");
+        return;
+      }
+
+      setFollowedMemberIds((prev) => [...prev, targetUserId]);
+    } catch (err) {
+      setMembersError("Could not follow user.");
+    }
+  };
   if (error) {
     return (
       <div className="profile-page">
@@ -95,6 +138,32 @@ function GymDetailPage() {
           <strong>Total members:</strong> {gym.total_members}
         </p>
 
+        <div className="profile-section">
+          <h2>Members</h2>
+
+          {membersError && <p className="login-error">{membersError}</p>}
+
+          {members.length === 0 ? (
+            <p>No members yet.</p>
+          ) : (
+            members.map((member) => (
+              <div key={member.user_id} className="gym-membership">
+                <span>{member.name}</span>
+
+                {member.user_id !== storedUser.user_id && (
+                  <button
+                    onClick={() => followMember(member.user_id)}
+                    disabled={followedMemberIds.includes(member.user_id)}
+                  >
+                    {followedMemberIds.includes(member.user_id)
+                      ? "Following"
+                      : "Follow"}
+                  </button>
+                )}
+              </div>
+            ))
+          )}
+        </div>
         <div className="profile-section">
           <h2>Gym Leaderboards</h2>
 

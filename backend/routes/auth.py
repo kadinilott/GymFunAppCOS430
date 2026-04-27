@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from werkzeug.security import generate_password_hash, check_password_hash
 import mysql.connector
 
 auth_bp = Blueprint("auth", __name__)
@@ -37,7 +38,7 @@ def login():
         if not user:
             return jsonify({"message": "Invalid credentials"}), 401
 
-        if user["password_hash"] != password:
+        if not check_password_hash(user["password_hash"], password):
             return jsonify({"message": "Invalid credentials"}), 401
 
         return jsonify({
@@ -85,13 +86,15 @@ def register():
 
         if existing_user:
             return jsonify({"message": "An account with that email already exists"}), 409
+       
+        password_hash = generate_password_hash(password)
 
         cursor.execute(
             """
             INSERT INTO users (name, email, password_hash)
             VALUES (%s, %s, %s)
             """,
-            (name, email, password)
+            (name, email, password_hash)
         )
         conn.commit()
 

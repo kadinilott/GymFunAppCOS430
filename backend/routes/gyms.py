@@ -409,3 +409,39 @@ def get_gym_leaderboards(gym_id):
             cursor.close()
         if conn:
             conn.close()
+
+@gyms_bp.route("/<int:gym_id>/members", methods=["GET"])
+def get_gym_members(gym_id):
+    conn = None
+    cursor = None
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor(dictionary=True)
+
+        cursor.execute(
+            """
+            SELECT
+                u.user_id,
+                u.name,
+                u.email,
+                u.profile_picture_url,
+                gm.date_joined
+            FROM gym_memberships gm
+            JOIN users u ON gm.user_id = u.user_id
+            WHERE gm.gym_id = %s
+            ORDER BY u.name
+            """,
+            (gym_id,)
+        )
+
+        return jsonify(cursor.fetchall()), 200
+
+    except mysql.connector.Error as e:
+        return jsonify({"message": str(e)}), 500
+
+    finally:
+        if cursor:
+            cursor.close()
+        if conn:
+            conn.close()
