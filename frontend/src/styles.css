@@ -1980,3 +1980,33 @@ body {
   color: white;
   cursor: pointer;
 }
+
+.gym-search-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.gym-results {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gym-membership button {
+  margin-left: 8px;
+  background: #f26f63;
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.feed-action-button.liked {
+  background: #e63946;
+  color: white;
+}
