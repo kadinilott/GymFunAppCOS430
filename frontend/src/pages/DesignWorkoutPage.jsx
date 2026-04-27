@@ -28,7 +28,7 @@ function DesignWorkoutPage() {
   const [cameFromCompletedWorkout, setCameFromCompletedWorkout] =
     useState(false);
   const [shouldPostAfterSave, setShouldPostAfterSave] = useState(false);
-
+  const [completedGymId, setCompletedGymId] = useState(null);
   const storedUser = JSON.parse(localStorage.getItem("user"));
 
   useEffect(() => {
@@ -43,7 +43,7 @@ function DesignWorkoutPage() {
     setSelectedExercises(parsedDraft.exercises || []);
     setCameFromCompletedWorkout(true);
     setShouldPostAfterSave(Boolean(parsedDraft.post));
-
+    setCompletedGymId(parsedDraft.gymId || null);
     sessionStorage.removeItem("completedWorkoutDraft");
   }, []);
 
@@ -224,6 +224,7 @@ function DesignWorkoutPage() {
           notes,
           completed: cameFromCompletedWorkout,
           post: shouldPostAfterSave,
+          gym_id: cameFromCompletedWorkout ? completedGymId : null,
           exercises: selectedExercises.map((exercise) => ({
             exercise_id: exercise.exercise_id,
             sets: exercise.sets.length,
