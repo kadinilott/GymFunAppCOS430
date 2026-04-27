@@ -33,12 +33,34 @@ def create_workout():
         cursor = conn.cursor(dictionary=True)
 
         completed = data.get("completed", False)
+        gym_id = data.get("gym_id")
+
+        if completed and gym_id:
+            cursor.execute(
+                """
+                SELECT membership_id
+                FROM gym_memberships
+                WHERE user_id = %s AND gym_id = %s
+                """,
+                (user_id, gym_id)
+            )
+
+            if not cursor.fetchone():
+                return jsonify({
+                    "message": "You must be a member of this gym to count this workout toward leaderboards"
+                }), 403
+
         cursor.execute(
             """
-                INSERT INTO workouts (user_id, title, completed_at)
-                VALUES (%s, %s, CASE WHEN %s THEN NOW() ELSE NULL END)
+            INSERT INTO workouts (user_id, gym_id, title, completed_at)
+            VALUES (%s, %s, %s, CASE WHEN %s THEN NOW() ELSE NULL END)
             """,
-        (user_id, title, completed)
+            (
+                user_id,
+                gym_id if completed and gym_id else None,
+                title,
+                completed
+            )
         )
 
         workout_id = cursor.lastrowid

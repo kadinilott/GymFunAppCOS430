@@ -40,12 +40,17 @@ CREATE TABLE workouts (
     workout_id INT AUTO_INCREMENT PRIMARY KEY,
     user_id INT NOT NULL,
     title VARCHAR(150) NULL,
+    gym_id INT NULL,
     created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     completed_at DATETIME NULL,
     CONSTRAINT fk_workouts_user
         FOREIGN KEY (user_id) REFERENCES users(user_id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+    CONSTRAINT fk_workouts_gym
+    FOREIGN KEY (gym_id) REFERENCES gyms(gym_id)
+    ON DELETE SET NULL;
 );
+
 
 CREATE TABLE posts (
     post_id INT AUTO_INCREMENT PRIMARY KEY,
